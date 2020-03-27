@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:coronavirus_diary/src/data/models/questions.dart';
+import 'package:covidnearme/src/data/models/questions.dart';
 
 abstract class QuestionsState extends Equatable {
   const QuestionsState();
@@ -12,9 +12,13 @@ abstract class QuestionsState extends Equatable {
   bool get stringify => true;
 }
 
-class QuestionsStateNotLoaded extends QuestionsState {}
+class QuestionsStateNotLoaded extends QuestionsState {
+  const QuestionsStateNotLoaded();
+}
 
-class QuestionsStateLoading extends QuestionsState {}
+class QuestionsStateLoading extends QuestionsState {
+  const QuestionsStateLoading();
+}
 
 class QuestionsStateLoaded extends QuestionsState {
   final List<Question> questions;

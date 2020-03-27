@@ -5,15 +5,19 @@ part 'checkups.g.dart';
 @JsonSerializable()
 class Checkup {
   String id;
+  String userId;
   DateTime created;
   bool dataContributionPreference;
+  CheckupLocation location;
   List<SubjectiveQuestionResponse> subjectiveResponses;
   List<VitalsResponse> vitalsResponses;
 
   Checkup({
     this.id,
+    this.userId,
     this.created,
     dataContributionPreference,
+    this.location,
     subjectiveResponses,
     vitalsResponses,
   })  : dataContributionPreference = dataContributionPreference ?? true,
@@ -26,7 +30,8 @@ class Checkup {
 
   @override
   String toString() =>
-      'Checkup { id: $id, created: $created, dataContributionPreference: $dataContributionPreference, subjectiveResponses: $subjectiveResponses, vitalsResponses: $vitalsResponses }';
+      'Checkup { id: $id, userId: $userId, created: $created, dataContributionPreference: $dataContributionPreference, '
+      'location: $location, subjectiveResponses: $subjectiveResponses, vitalsResponses: $vitalsResponses }';
 }
 
 @JsonSerializable()
@@ -51,7 +56,7 @@ class SubjectiveQuestionResponse {
 @JsonSerializable()
 class VitalsResponse {
   final String id;
-  String response;
+  dynamic response;
   String dataSource;
 
   VitalsResponse({
@@ -67,4 +72,20 @@ class VitalsResponse {
   @override
   String toString() =>
       'VitalsResponse { id: $id, response: $response, dataSource: $dataSource }';
+}
+
+@JsonSerializable()
+class CheckupLocation {
+  String postalCode;
+
+  CheckupLocation({
+    this.postalCode,
+  });
+
+  factory CheckupLocation.fromJson(Map<String, dynamic> json) =>
+      _$CheckupLocationFromJson(json);
+  Map<String, dynamic> toJson() => _$CheckupLocationToJson(this);
+
+  @override
+  String toString() => 'CheckupLocation { postalCode: $postalCode }';
 }

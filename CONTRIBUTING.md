@@ -10,6 +10,13 @@ You can help out by:
 - Proposing new features
 - Becoming a maintainer
 
+## Branches
+
+We're using the following branches to manage work:
+- `develop` is semi-stable and should be used as the branch to fork from
+- `master` is stable and ready for prod (or it will be once we merge in the first release)
+- `feature`, `bug` branches: unstable development
+
 ## How to report bugs
 We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/joshua-s/coronavirus-diary/issues/new/choose); it's that easy!
 
@@ -32,14 +39,15 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 Pull requests are the best way to propose changes to the codebase. We use a loose version of Git Flow
 and actively welcome your pull requests:
 
-1. Fork the repo and create your branch from `develop`:
+1. Set up your local development environment. See [USAGE.md](USAGE.md) for instructions.
+1. Make sure to use the latest Flutter stable-channel SDK release.
+1. Create a new branch based on `develop`:
    - Feature branches should start with `feature/`
    - Bugfix branches should start with `bug/`
-2. Add tests if applicable.
-3. Make sure your code lints.
-4. Issue that pull request!
+1. Implement your changes.
+1. Add tests if applicable.
+1. Make sure your code lints.
+1. Issue that pull request!
 
 ### Any contributions you make will be under the MIT Software License
 When you submit code changes, your submissions are understood to be under the same [MIT License](LICENSE) that covers the project.
-
-Feel free to contact the maintainers if that's a concern.

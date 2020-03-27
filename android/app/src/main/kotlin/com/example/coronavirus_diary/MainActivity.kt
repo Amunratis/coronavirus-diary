@@ -1,4 +1,4 @@
-package com.coronavirus_diary.app
+package com.covidNearMe.app
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

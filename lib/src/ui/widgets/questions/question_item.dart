@@ -1,43 +1,45 @@
 import 'package:flutter/material.dart';
 
-import 'package:coronavirus_diary/src/data/models/questions.dart';
-import 'inputs/index.dart';
+import 'package:covidnearme/src/data/models/questions.dart';
+import 'package:covidnearme/src/ui/widgets/questions/inputs/radio_button_scale.dart';
 
 class QuestionItem extends StatefulWidget {
   final Question question;
-  final Function(dynamic value) onChange;
+  final ValueChanged<int> onChanged;
 
-  const QuestionItem({this.question, this.onChange});
+  const QuestionItem({this.question, this.onChanged});
 
   @override
   _QuestionItemState createState() => _QuestionItemState();
 }
 
 class _QuestionItemState extends State<QuestionItem> {
-  List<FlutterSliderHatchMarkLabel> _getHatchMarkLabels(
-      SliderQuestion question) {
-    if (question.labels == null) return [];
+  int currentValue;
 
-    List<FlutterSliderHatchMarkLabel> labels = [];
-    question.labels.forEach((String key, String value) {
-      labels.add(FlutterSliderHatchMarkLabel(
-        label: Text(value),
-        percent: (double.parse(key) / question.max) * 100,
-      ));
+  @override
+  void initState() {
+    super.initState();
+    if (widget.question is ScaleQuestion) {
+      currentValue = (widget.question as ScaleQuestion).initialValue;
+    }
+  }
+
+  void _handleRadioChange(int value) {
+    setState(() {
+      currentValue = value;
+      widget.onChanged?.call(value);
     });
-    return labels;
   }
 
   Widget _getInput() {
     switch (widget.question.runtimeType) {
-      case SliderQuestion:
-        final SliderQuestion question = widget.question;
-        return SimpleSlider(
-          value: question.initialValue,
-          min: question.min,
-          max: question.max,
-          labels: _getHatchMarkLabels(question),
-          onChange: widget.onChange,
+      case ScaleQuestion:
+        final ScaleQuestion sliderQuestion = widget.question;
+        return RadioButtonScale(
+          labels: sliderQuestion.labels,
+          value: currentValue,
+          semanticLabels: sliderQuestion.semanticLabels,
+          onChanged: widget.onChanged == null ? null : _handleRadioChange,
         );
       default:
         return Container();
@@ -47,25 +49,21 @@ class _QuestionItemState extends State<QuestionItem> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(40),
+      padding: EdgeInsets.only(bottom: 40, left: 20, right: 20),
       child: Column(
         children: <Widget>[
-          DefaultTextStyle(
-            child: Text(widget.question.title),
+          Text(
+            widget.question.title,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.title.copyWith(
-                  color: Colors.white,
-                ),
+            style: Theme.of(context).textTheme.title,
           ),
           if (widget.question.subtitle != null)
             Padding(
-              padding: EdgeInsets.only(top: 20),
-              child: DefaultTextStyle(
-                child: Text(widget.question.subtitle),
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                widget.question.subtitle,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.subtitle.copyWith(
-                      color: Colors.white,
-                    ),
+                style: Theme.of(context).textTheme.subtitle,
               ),
             ),
           _getInput(),

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import 'package:coronavirus_diary/src/data/models/checkups.dart';
+import 'package:covidnearme/src/data/models/checkups.dart';
 
 abstract class CheckupEvent extends Equatable {
   const CheckupEvent();
@@ -12,17 +12,19 @@ abstract class CheckupEvent extends Equatable {
   bool get stringify => true;
 }
 
-class StartCheckup extends CheckupEvent {}
+class StartCheckup extends CheckupEvent {
+  const StartCheckup();
+}
 
-class UpdateLocalCheckup extends CheckupEvent {
+class UpdateCheckup extends CheckupEvent {
   final Checkup updatedCheckup;
 
-  const UpdateLocalCheckup({this.updatedCheckup});
+  const UpdateCheckup({this.updatedCheckup});
 
   @override
   List<Object> get props => [updatedCheckup];
 }
 
-class UpdateRemoteCheckup extends CheckupEvent {}
-
-class CompleteCheckup extends CheckupEvent {}
+class CompleteCheckup extends CheckupEvent {
+  const CompleteCheckup();
+}

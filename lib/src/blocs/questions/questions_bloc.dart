@@ -4,10 +4,10 @@ import 'dart:developer' as developer;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:meta/meta.dart';
 
-import 'package:coronavirus_diary/src/data/repositories/questions.dart';
+import 'package:covidnearme/src/data/repositories/questions.dart';
 import 'questions.dart';
 
-export 'package:coronavirus_diary/src/data/models/questions.dart';
+export 'package:covidnearme/src/data/models/questions.dart';
 
 class QuestionsBloc extends Bloc<QuestionsEvent, QuestionsState> {
   final QuestionsRepository questionsRepository;
@@ -15,7 +15,7 @@ class QuestionsBloc extends Bloc<QuestionsEvent, QuestionsState> {
   QuestionsBloc({@required this.questionsRepository});
 
   @override
-  QuestionsState get initialState => QuestionsStateNotLoaded();
+  QuestionsState get initialState => const QuestionsStateNotLoaded();
 
   @override
   Stream<QuestionsState> mapEventToState(QuestionsEvent event) async* {
@@ -27,12 +27,12 @@ class QuestionsBloc extends Bloc<QuestionsEvent, QuestionsState> {
   }
 
   Stream<QuestionsState> _mapLoadQuestionsToState(LoadQuestions event) async* {
-    yield QuestionsStateLoading();
+    yield const QuestionsStateLoading();
 
     try {
       final questions = await questionsRepository.listQuestions();
       yield QuestionsStateLoaded(questions);
-    } catch (exception) {
+    } on Exception catch (exception) {
       developer.log(
         'Could not load questions list',
         error: exception,

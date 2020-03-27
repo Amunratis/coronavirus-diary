@@ -1,33 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_hud/flutter_hud.dart';
 import 'package:provider/provider.dart';
 
-import 'package:coronavirus_diary/src/blocs/checkup/checkup.dart';
-import 'package:coronavirus_diary/src/blocs/questions/questions.dart';
-import 'package:coronavirus_diary/src/ui/widgets/loading_indicator.dart';
-import 'steps/index.dart';
+import 'package:covidnearme/src/blocs/checkup/checkup.dart';
+import 'package:covidnearme/src/blocs/preferences/preferences.dart';
+import 'package:covidnearme/src/l10n/app_localizations.dart';
+import 'package:covidnearme/src/ui/router.dart';
+import 'package:covidnearme/src/ui/widgets/loading_indicator.dart';
+import 'package:covidnearme/src/ui/widgets/network_unavailable_banner.dart';
+import 'checkup_loaded_body.dart';
 
-class CheckupScreen extends StatelessWidget {
+class CheckupScreen extends StatefulWidget {
   static const routeName = '/checkup';
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider<CheckupBloc>(
-      create: (context) => CheckupBloc(),
-      child: CheckupScreenBody(),
-    );
-  }
+  _CheckupScreenState createState() => _CheckupScreenState();
 }
 
-class CheckupScreenBody extends StatefulWidget {
-  @override
-  _CheckupScreenBodyState createState() => _CheckupScreenBodyState();
-}
-
-class _CheckupScreenBodyState extends State<CheckupScreenBody> {
+class _CheckupScreenState extends State<CheckupScreen> {
+  // Storing the page controller at this level so that we can access it
+  // across the entire checkup experience
   PageController _pageController;
-  int currentIndex = 0;
-  CheckupStep currentStep = steps[0];
+  bool _showLoadingAssessmentHUD = false;
 
   @override
   void initState() {
@@ -41,149 +36,120 @@ class _CheckupScreenBodyState extends State<CheckupScreenBody> {
     _pageController.dispose();
   }
 
-  void _handlePageChange(int index) {
-    setState(() {
-      currentIndex = index;
-      currentStep = steps[index];
-    });
-
-    if (currentIndex > 1) {
-      context.bloc<CheckupBloc>().add(UpdateRemoteCheckup());
-    }
-  }
-
   Widget _getUnloadedBody(
     CheckupState checkupState,
-    QuestionsState questionsState,
   ) {
     if (checkupState is CheckupStateNotCreated) {
-      context.bloc<CheckupBloc>().add(StartCheckup());
-    }
-    if (questionsState is QuestionsStateNotLoaded) {
-      context.bloc<QuestionsBloc>().add(LoadQuestions());
+      context.bloc<CheckupBloc>().add(const StartCheckup());
     }
     return LoadingIndicator('Loading your health checkup');
   }
 
-  Widget _getProgressBar(QuestionsState state) {
-    double percentComplete = (currentIndex) / (steps.length - 1);
-    bool isLastPage = currentIndex == steps.length - 1;
-
-    // Remember to update this if steps are added that do not count towards the total
-    String percentCompleteText = 'Step ${currentIndex} of ${steps.length - 1}';
-
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  percentCompleteText,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-                ),
-                RaisedButton(
-                  onPressed: () => _pageController.nextPage(
-                    duration: Duration(milliseconds: 400),
-                    curve: Curves.easeInOut,
-                  ),
-                  child: Text(isLastPage ? 'Submit' : 'Continue'),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            height: 20,
-            child: LinearProgressIndicator(
-              value: percentComplete,
-              backgroundColor: Colors.white.withOpacity(0.2),
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-            ),
-          ),
-        ],
+  Widget _getErrorBody() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(20),
+        child: Text(
+          AppLocalizations.of(context).checkupScreenErrorRetrievingExperience,
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }
 
-  Widget _getLoadedBody(QuestionsState state) {
-    return Stack(
-      children: <Widget>[
-        PageView.builder(
-          controller: _pageController,
-          onPageChanged: _handlePageChange,
-          itemCount: steps.length,
-          itemBuilder: (BuildContext context, int index) {
-            return steps[index];
-          },
-        ),
-        if (currentStep != null && currentIndex > 0) _getProgressBar(state),
-      ],
+  void _handleCheckupCompletion(
+    PreferencesState preferencesState,
+    CheckupStateCompleted checkupState,
+  ) {
+    // Remember assessment
+    if (preferencesState.preferences.lastAssessment !=
+        checkupState.assessment) {
+      Preferences newPreferences = preferencesState.preferences.cloneWith(
+        lastAssessment: checkupState.assessment,
+        // If they've completed an assessment, then don't show them the welcome
+        // screen again.
+        completedTutorial: true,
+      );
+      context.bloc<PreferencesBloc>().add(UpdatePreferences(newPreferences));
+    }
+
+    // Navigate to assessment view
+    Navigator.pushReplacementNamed(
+      context,
+      AssessmentScreen.routeName,
+      arguments: AssessmentScreenArguments(
+        assessment: checkupState.assessment,
+      ),
     );
   }
 
-  Widget _getErrorBody(QuestionsState state) {
-    Widget errorBody;
-
-    if (state is QuestionsStateLoaded && state.questions.length == 0) {
-      errorBody = Text(
-        'The checkup experience is not currently available. Please try again later.',
-      );
-    } else {
-      errorBody = Text(
-          'There was an error retrieving the checkup experience. Please try again later.');
-    }
-
-    return errorBody;
-  }
-
-  Widget _getBody(CheckupState checkupState, QuestionsState questionsState) {
-    if (questionsState is QuestionsStateNotLoaded ||
-        questionsState is QuestionsStateLoading ||
-        checkupState is! CheckupStateInProgress) {
-      return _getUnloadedBody(checkupState, questionsState);
-    } else if (questionsState is QuestionsStateLoaded &&
-        questionsState.questions.length > 0) {
-      return _getLoadedBody(questionsState);
-    } else {
-      return _getErrorBody(questionsState);
+  Widget _getBody(
+    PreferencesState preferencesState,
+    CheckupState checkupState,
+  ) {
+    switch (checkupState.runtimeType) {
+      case CheckupStateNotCreated:
+      case CheckupStateCreating:
+        return _getUnloadedBody(checkupState);
+      case CheckupStateInProgress:
+        return CheckupLoadedBody();
+      case CheckupStateCompleting:
+      case CheckupStateCompleted:
+        return Container();
+      default:
+        return _getErrorBody();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<CheckupBloc, CheckupState>(
-      listener: (context, state) {
-        print(context);
-        print(state);
-      },
+    return BlocBuilder<PreferencesBloc, PreferencesState>(
       builder: (context, state) {
-        final CheckupState checkupState = state;
+        final PreferencesState preferencesState = state;
 
-        return BlocBuilder<QuestionsBloc, QuestionsState>(
+        return BlocConsumer<CheckupBloc, CheckupState>(
+          listener: (context, state) {
+            if (state is CheckupStateCompleting) {
+              if (!_showLoadingAssessmentHUD) {
+                setState(() {
+                  _showLoadingAssessmentHUD = true;
+                });
+              }
+            } else if (state is CheckupStateCompleted) {
+              _handleCheckupCompletion(preferencesState, state);
+            }
+          },
           builder: (context, state) {
-            final QuestionsState questionsState = state;
+            final CheckupState checkupState = state;
 
-            return ChangeNotifierProvider<PageController>(
-              create: (context) => _pageController,
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text('Your Health Checkup'),
-                ),
-                backgroundColor: Theme.of(context).primaryColor,
-                body: _getBody(
-                  checkupState,
-                  questionsState,
-                ),
+            return WidgetHUD(
+              showHUD: _showLoadingAssessmentHUD,
+              hud: HUD(
+                color: Theme.of(context).colorScheme.surface,
+                opacity: 1.0,
+                labelStyle: Theme.of(context).textTheme.headline,
+                label: 'Loading your assessment',
               ),
+              builder: (context) {
+                return ChangeNotifierProvider<PageController>.value(
+                  value: _pageController,
+                  child: Scaffold(
+                    appBar: AppBar(
+                      title:
+                          Text(AppLocalizations.of(context).checkupScreenTitle),
+                      leading: IconButton(
+                        icon: Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                        tooltip: 'Go back to the home page.',
+                      ),
+                    ),
+                    backgroundColor: Theme.of(context).backgroundColor,
+                    body: NetworkUnavailableBanner.wrap(
+                      _getBody(preferencesState, checkupState),
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
